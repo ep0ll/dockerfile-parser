@@ -14,3 +14,9 @@ func ParseEnv(ctx *parser.Context, input parser.InstructionInput) (*parser.Instr
 	}
 	return instruction, nil
 }
+
+func envFlagOptions() parser.Option {
+	return parser.WithFlagSpecs("", "ENV",
+		parser.FlagSpec{Name: "unset", ValueMode: parser.FlagOptionalInlineValue},
+	)
+}

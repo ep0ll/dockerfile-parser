@@ -6,3 +6,9 @@ func ParseFrom(ctx *parser.Context, input parser.InstructionInput) (*parser.Inst
 	instruction, _, err := parseBase(ctx, input, parser.FormWords)
 	return instruction, err
 }
+
+func fromFlagOptions() parser.Option {
+	return parser.WithFlagSpecs("", "FROM",
+		parser.FlagSpec{Name: "platform", ValueMode: parser.FlagRequiredValue},
+	)
+}

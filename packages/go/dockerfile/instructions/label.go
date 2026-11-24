@@ -14,3 +14,9 @@ func ParseLabel(ctx *parser.Context, input parser.InstructionInput) (*parser.Ins
 	}
 	return instruction, nil
 }
+
+func labelFlagOptions() parser.Option {
+	return parser.WithFlagSpecs("", "LABEL",
+		parser.FlagSpec{Name: "unset", ValueMode: parser.FlagOptionalInlineValue},
+	)
+}

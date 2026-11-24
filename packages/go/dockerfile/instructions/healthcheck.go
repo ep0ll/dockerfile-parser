@@ -20,3 +20,14 @@ func ParseHealthcheck(ctx *parser.Context, input parser.InstructionInput) (*pars
 	}
 	return instruction, nil
 }
+
+func healthcheckFlagOptions() parser.Option {
+	value := parser.FlagRequiredValue
+	return parser.WithFlagSpecs("", "HEALTHCHECK",
+		parser.FlagSpec{Name: "interval", ValueMode: value},
+		parser.FlagSpec{Name: "timeout", ValueMode: value},
+		parser.FlagSpec{Name: "start-period", ValueMode: value},
+		parser.FlagSpec{Name: "start-interval", ValueMode: value},
+		parser.FlagSpec{Name: "retries", ValueMode: value},
+	)
+}
