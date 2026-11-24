@@ -39,18 +39,20 @@ func TestParseFlagsAndScopedReplacement(t *testing.T) {
 }
 
 func TestSplitWordsPreservesQuotedValues(t *testing.T) {
-	got, err := SplitWords("--mount=\\"type=cache,target=/root/.cache\\" echo \\"hello world\\"", '\\\\')
+	quote := string(rune(34))
+	raw := "--mount=" + quote + "type=cache,target=/root/.cache" + quote + " echo " + quote + "hello world" + quote
+	got, err := SplitWords(raw, rune(92))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 3 || got[0] != "--mount=\\"type=cache,target=/root/.cache\\"" || got[2] != "\\"hello world\\"" {
+	if len(got) != 3 || got[0] != "--mount="+quote+"type=cache,target=/root/.cache"+quote || got[2] != quote+"hello world"+quote {
 		t.Fatalf("unexpected words: %#v", got)
 	}
 }
 
 func TestOptionalInlineFlagDoesNotConsumeFollowingArgument(t *testing.T) {
 	flags, args, err := ParseFlagArguments("", "COPY", "--link source target",
-		[]FlagSpec{{Name: "link", ValueMode: FlagOptionalInlineValue}}, UnknownFlagError, '\\\\')
+		[]FlagSpec{{Name: "link", ValueMode: FlagOptionalInlineValue}}, UnknownFlagError, rune(92))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +60,7 @@ func TestOptionalInlineFlagDoesNotConsumeFollowingArgument(t *testing.T) {
 		t.Fatalf("flags=%#v args=%#v", flags, args)
 	}
 	flags, args, err = ParseFlagArguments("", "COPY", "--link=false source target",
-		[]FlagSpec{{Name: "link", ValueMode: FlagOptionalInlineValue}}, UnknownFlagError, '\\\\')
+		[]FlagSpec{{Name: "link", ValueMode: FlagOptionalInlineValue}}, UnknownFlagError, rune(92))
 	if err != nil {
 		t.Fatal(err)
 	}
