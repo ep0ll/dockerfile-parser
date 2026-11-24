@@ -133,7 +133,7 @@ func TestUnterminatedHeredocReportsConsumedSourceRange(t *testing.T) {
 
 func TestAddAndCopyCollectHeredocBodies(t *testing.T) {
 	source := "COPY <<EOF /app/config\nkey=value\nEOF\n" +
-		"ADD <<'SCRIPT' /app/start.sh\necho \\"$HOME\\"\nSCRIPT\n" +
+		"ADD <<'SCRIPT' /app/start.sh\necho \"$HOME\"\nSCRIPT\n" +
 		"FROM alpine\n"
 	p, err := dockerfile.NewParser(strings.NewReader(source))
 	if err != nil {
@@ -145,7 +145,7 @@ func TestAddAndCopyCollectHeredocBodies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if copyInstruction.Name != "COPY" || len(copyInstruction.Bodies) != 1 ||
-		copyInstruction.Bodies[0].Content != "key=value\\n" {
+		copyInstruction.Bodies[0].Content != "key=value\n" {
 		t.Fatalf("COPY heredoc = %#v", copyInstruction)
 	}
 
@@ -154,7 +154,7 @@ func TestAddAndCopyCollectHeredocBodies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if addInstruction.Name != "ADD" || len(addInstruction.Bodies) != 1 ||
-		addInstruction.Bodies[0].Content != "echo \\"$HOME\\"\\n" {
+		addInstruction.Bodies[0].Content != "echo \"$HOME\"\n" {
 		t.Fatalf("ADD heredoc = %#v", addInstruction)
 	}
 	spec := addInstruction.Bodies[0].Data.(heredoc.Spec)
