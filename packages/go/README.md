@@ -147,6 +147,13 @@ parser.WithFlagSpecs("", "COPY",
 )
 ```
 
+For a group of flags that never take values, use the variadic convenience
+option rather than constructing a slice:
+
+```go
+parser.WithSimpleFlags("", "PUBLISH", "quiet", "dry-run", "force")
+```
+
 Flag value modes:
 
 - `FlagNoValue`: `--flag`
