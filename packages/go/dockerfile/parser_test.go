@@ -344,9 +344,12 @@ func TestInstructionFlagSchemasAreDeclaredForEachBuiltInCommand(t *testing.T) {
 
 
 func TestHealthcheckSeparatesModeAndCommandForm(t *testing.T) {
-	source := "HEALTHCHECK --interval=30s CMD [\\"curl\\", \\"-f\\", \\"http://localhost\\"]\\n" +
-		"HEALTHCHECK CMD curl -f http://localhost\\n" +
-		"HEALTHCHECK NONE\\n"
+	quote := string(rune(34))
+	newline := string(rune(10))
+	jsonCommandText := "[" + quote + "curl" + quote + ", " + quote + "-f" + quote + ", " + quote + "http://localhost" + quote + "]"
+	source := "HEALTHCHECK --interval=30s CMD " + jsonCommandText + newline +
+		"HEALTHCHECK CMD curl -f http://localhost" + newline +
+		"HEALTHCHECK NONE" + newline
 	p, err := dockerfile.NewParser(strings.NewReader(source))
 	if err != nil {
 		t.Fatal(err)
