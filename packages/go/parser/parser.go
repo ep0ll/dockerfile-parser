@@ -9,6 +9,8 @@ import (
 	"github.com/ep0ll/dockerfile-parser/packages/go/lexer"
 )
 
+// Parser incrementally parses one instruction per Next call. It is a
+// single-consumer iterator and does not enforce document-level semantics.
 type Parser struct {
 	lines                  LineReader
 	escapeToken            rune
@@ -35,6 +37,7 @@ type Parser struct {
 	metadata               map[string]any
 }
 
+// New constructs an independent parser instance with the supplied options.
 func New(r io.Reader, options ...Option) (*Parser, error) {
 	if r == nil {
 		return nil, fmt.Errorf("source reader cannot be nil")
@@ -80,6 +83,8 @@ func New(r io.Reader, options ...Option) (*Parser, error) {
 	}, nil
 }
 
+// Next returns the next parsed instruction or io.EOF. It never performs
+// document-level validation such as FROM ordering or ONBUILD placement.
 func (p *Parser) Next() (*Instruction, error) {
 	for {
 		line, err := p.lines.Next()
@@ -97,6 +102,9 @@ func (p *Parser) Next() (*Instruction, error) {
 			continue
 		}
 		if strings.TrimSpace(line.Text) == "" {
+			// Blank lines do not consume the parser-directive preamble. They
+			// also separate comments from the next instruction, so discard any
+			// pending documentation comments here.
 			p.pendingComments = nil
 			continue
 		}
@@ -120,8 +128,10 @@ func (p *Parser) Next() (*Instruction, error) {
 	}
 }
 
+// Directives returns a defensive copy of the directives accepted so far.
 func (p *Parser) Directives() []Directive { return append([]Directive(nil), p.directives...) }
 
+// Metadata returns a shallow copy of parser metadata.
 func (p *Parser) Metadata() map[string]any {
 	copyOf := make(map[string]any, len(p.metadata))
 	for key, value := range p.metadata {
@@ -130,6 +140,7 @@ func (p *Parser) Metadata() map[string]any {
 	return copyOf
 }
 
+// EscapeToken returns the active line-escape token.
 func (p *Parser) EscapeToken() rune { return p.escapeToken }
 
 func (p *Parser) closePreamble() {
@@ -255,6 +266,8 @@ func parseUnknown(ctx *Context, input InstructionInput) (*Instruction, error) {
 	return &Instruction{Flags: flags, Args: args, Unknown: true}, nil
 }
 
+// ParseAll eagerly consumes the stream. Prefer New+Next when instructions
+// should be processed, rejected, or transformed one at a time.
 func ParseAll(r io.Reader, options ...Option) ([]*Instruction, error) {
 	p, err := New(r, options...)
 	if err != nil {

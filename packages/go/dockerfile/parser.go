@@ -1,8 +1,10 @@
 // Package dockerfile composes the generic parser with the Dockerfile dialect.
-// Its defaults are deliberately syntax-oriented: document policy belongs to consumers.
+// Its defaults are deliberately syntax-oriented: document policy (stage order,
+// ONBUILD restrictions, required arguments, and so on) belongs to consumers.
 package dockerfile
 
 import (
+	"errors"
 	"io"
 
 	"github.com/ep0ll/dockerfile-parser/packages/go/dockerfile/directives"
@@ -43,7 +45,7 @@ func ParseAll(source io.Reader, options ...Option) ([]*parser.Instruction, error
 	var instructions []*parser.Instruction
 	for {
 		instruction, err := p.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return instructions, nil
 		}
 		if err != nil {
