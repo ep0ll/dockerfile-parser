@@ -10,7 +10,7 @@ func ParseEnv(ctx *parser.Context, input parser.InstructionInput) (*parser.Instr
 	if unsetEnabled(instruction.Flags) {
 		instruction.Pairs = parsePairs(words)
 	} else {
-		instruction.Pairs = parseLegacyEnv(words)
+		instruction.Pairs = parseLegacyKeyValues(words)
 	}
 	return instruction, nil
 }

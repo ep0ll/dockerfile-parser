@@ -79,7 +79,7 @@ func parsePairs(words []string) []parser.KeyValue {
 	return pairs
 }
 
-func parseLegacyEnv(words []string) []parser.KeyValue {
+func parseLegacyKeyValues(words []string) []parser.KeyValue {
 	if len(words) == 0 {
 		return nil
 	}

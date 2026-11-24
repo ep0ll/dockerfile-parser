@@ -129,3 +129,44 @@ func TestUnterminatedHeredocReportsConsumedSourceRange(t *testing.T) {
 		t.Fatalf("unexpected unterminated heredoc error: %v", err)
 	}
 }
+
+
+func TestAddAndCopyCollectHeredocBodies(t *testing.T) {
+	source := "COPY <<EOF /app/config\nkey=value\nEOF\n" +
+		"ADD <<'SCRIPT' /app/start.sh\necho \\"$HOME\\"\nSCRIPT\n" +
+		"FROM alpine\n"
+	p, err := dockerfile.NewParser(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	copyInstruction, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if copyInstruction.Name != "COPY" || len(copyInstruction.Bodies) != 1 ||
+		copyInstruction.Bodies[0].Content != "key=value\\n" {
+		t.Fatalf("COPY heredoc = %#v", copyInstruction)
+	}
+
+	addInstruction, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addInstruction.Name != "ADD" || len(addInstruction.Bodies) != 1 ||
+		addInstruction.Bodies[0].Content != "echo \\"$HOME\\"\\n" {
+		t.Fatalf("ADD heredoc = %#v", addInstruction)
+	}
+	spec := addInstruction.Bodies[0].Data.(heredoc.Spec)
+	if spec.Expand {
+		t.Fatal("quoted ADD heredoc delimiter should disable expansion")
+	}
+
+	next, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.Name != "FROM" {
+		t.Fatalf("next instruction = %#v", next)
+	}
+}

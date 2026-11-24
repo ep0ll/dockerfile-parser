@@ -7,6 +7,10 @@ func ParseLabel(ctx *parser.Context, input parser.InstructionInput) (*parser.Ins
 	if err != nil {
 		return nil, err
 	}
-	instruction.Pairs = parsePairs(words)
+	if unsetEnabled(instruction.Flags) {
+		instruction.Pairs = parsePairs(words)
+	} else {
+		instruction.Pairs = parseLegacyKeyValues(words)
+	}
 	return instruction, nil
 }

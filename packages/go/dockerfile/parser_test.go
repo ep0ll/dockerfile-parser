@@ -262,3 +262,41 @@ func TestEmptyCommentResetsPendingComments(t *testing.T) {
 		t.Fatalf("empty comment should reset pending comments: %#v", instruction.Comments)
 	}
 }
+
+
+func TestLabelParsesLegacyAndKeyValueForms(t *testing.T) {
+	source := "LABEL maintainer \\"Example Org\\"\\n" +
+		"LABEL org.example.name=Demo org.example.version=1\\n" +
+		"LABEL --unset org.example.name org.example.version\\n"
+	p, err := dockerfile.NewParser(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	legacy, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(legacy.Pairs) != 1 || legacy.Pairs[0].Key != "maintainer" ||
+		legacy.Pairs[0].Value != "\\"Example Org\\"" || !legacy.Pairs[0].HasValue {
+		t.Fatalf("legacy LABEL pairs = %#v", legacy.Pairs)
+	}
+
+	keyValues, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keyValues.Pairs) != 2 || keyValues.Pairs[0].Key != "org.example.name" ||
+		keyValues.Pairs[0].Value != "Demo" || keyValues.Pairs[1].Key != "org.example.version" {
+		t.Fatalf("key-value LABEL pairs = %#v", keyValues.Pairs)
+	}
+
+	unset, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !unset.Flags.Has("unset") || len(unset.Pairs) != 2 ||
+		unset.Pairs[0].HasValue || unset.Pairs[1].HasValue {
+		t.Fatalf("LABEL --unset pairs = %#v", unset.Pairs)
+	}
+}
