@@ -68,3 +68,59 @@ func TestEmptyScopedFlagSchemaDisablesParentFlags(t *testing.T) {
 		t.Fatal("empty scoped schema should disable inherited flags")
 	}
 }
+
+
+func TestBodyCollectorIsIndependentFromDockerfileDialect(t *testing.T) {
+	source := "SCRIPT payload\nfirst line\nsecond line\nEND\nAFTER value\n"
+	p, err := New(strings.NewReader(source),
+		WithBodyCollector(func(ctx *BodyContext, input InstructionInput) ([]Body, error) {
+			if input.Name != "SCRIPT" {
+				return nil, nil
+			}
+			var content strings.Builder
+			for {
+				line, err := ctx.NextLine()
+				if err != nil {
+					return nil, err
+				}
+				if line.Text == "END" {
+					break
+				}
+				content.WriteString(line.Text)
+				content.WriteByte('\n')
+			}
+			return []Body{{
+				Kind: "block",
+				Name: "END",
+				Content: content.String(),
+				Position: Position{StartLine: 2, EndLine: ctx.EndLine()},
+			}}, nil
+		}),
+		WithInstructionHandler("SCRIPT", func(_ *Context, input InstructionInput) (*Instruction, error) {
+			return &Instruction{Form: FormRaw, Command: input.RawArgs}, nil
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	script, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(script.Bodies) != 1 || script.Bodies[0].Kind != "block" ||
+		script.Bodies[0].Content != "first line\nsecond line\n" {
+		t.Fatalf("custom body = %#v", script.Bodies)
+	}
+	if script.Position.StartLine != 1 || script.Position.EndLine != 4 {
+		t.Fatalf("script position = %#v", script.Position)
+	}
+
+	next, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.Name != "AFTER" || next.Position.StartLine != 5 {
+		t.Fatalf("next statement = %#v", next)
+	}
+}
