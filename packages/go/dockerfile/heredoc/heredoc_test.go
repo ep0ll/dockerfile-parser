@@ -50,7 +50,7 @@ func TestDeclarationsRecognizesAdjacentAndSeparatedOperators(t *testing.T) {
 		{name: "separated", raw: "cat << EOF", want: []Spec{{Delimiter: "EOF", Expand: true}}},
 		{name: "file descriptor", raw: "cat 3<<EOF", want: []Spec{{Delimiter: "EOF", FileDescriptor: 3, Expand: true}}},
 		{name: "quoted marker ignored", raw: "echo '<<EOF'", want: nil},
-		{name: "double quoted marker ignored", raw: "echo \\"<<EOF\\"", want: nil},
+		{name: "double quoted marker ignored", raw: "echo " + string(rune(34)) + "<<EOF" + string(rune(34)), want: nil},
 		{name: "here string ignored", raw: "cat <<<EOF", want: nil},
 		{name: "comment ignored", raw: "echo ok # <<EOF", want: nil},
 		{name: "multiple declarations", raw: "cat <<ONE && cat<<'TWO'", want: []Spec{{Delimiter: "ONE", Expand: true}, {Delimiter: "TWO", Expand: false}}},
