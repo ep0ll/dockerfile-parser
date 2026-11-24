@@ -204,6 +204,30 @@ Other replaceable lexical components are:
 - `WithContinuationParser`
 - `WithInstructionSplitter`
 - `WithFlagParser`
+- `WithBodyCollector`
+
+## Multiline bodies and heredocs
+
+The generic engine exposes `parser.WithBodyCollector`. A collector can read
+following physical lines through `parser.BodyContext` and attach opaque
+`parser.Body` values before an instruction handler runs.
+
+The Dockerfile dialect registers `dockerfile/heredoc.Collect` by default. It
+captures basic heredocs on `RUN`, `ADD`, and `COPY`:
+
+```dockerfile
+RUN cat <<'SCRIPT'
+echo "$HOME"
+SCRIPT
+```
+
+Each returned body has `Kind == "heredoc"`, its delimiter in `Name`, content
+in `Content`, and source lines in `Position`. Its `Data` value is a
+`heredoc.Spec`, which carries the file descriptor, whether shell expansion
+was requested by the delimiter quoting, and whether `<<-` tab stripping is
+enabled. The parser only captures source text; it does not interpolate variables
+or execute shell code. Multiple heredocs and nested `ONBUILD RUN` bodies use
+the same collector.
 
 ## Semantic validation belongs to the consumer
 
@@ -217,9 +241,10 @@ implement any policy before advancing to the next statement.
 The Go package currently supports physical-line reading, configurable line
 continuation, preamble directives (`escape`, `syntax`, `check`), comments,
 quote-aware word splitting, JSON/shell/word forms for the implemented
-instructions, independent flag schemas, nested `ONBUILD`, and source positions.
+instructions, independent flag schemas, nested `ONBUILD`, source positions,
+and basic heredoc collection for `RUN`, `ADD`, and `COPY`.
 
-Not yet implemented: Dockerfile heredoc body collection, full shell grammar,
-all BuildKit frontend semantics, variable expansion, stage construction,
-Docker build validation, and full lint/rule compatibility. These are distinct
-layers and will be added without coupling them to the generic parser core.
+Not yet implemented: full shell grammar, heredoc variable expansion, all
+BuildKit frontend semantics, stage construction, Docker build validation, and
+full lint/rule compatibility. These are distinct layers and will be added
+without coupling them to the generic parser core.

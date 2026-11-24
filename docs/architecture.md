@@ -106,6 +106,22 @@ Comment recognition and comment delivery are independent of directive
 recognition. Comment handlers can observe comments without having to parse
 instructions.
 
+## Multiline body collection
+
+The generic parser does not assume heredoc syntax. A dialect can register an
+optional `BodyCollector`, which receives the current instruction input and a
+`BodyContext` that reads subsequent physical lines. The collector returns
+opaque `parser.Body` values and the parser extends the instruction's source
+range to include the consumed body. This keeps body termination and delimiter
+rules outside individual instruction handlers.
+
+The Dockerfile facade registers `dockerfile/heredoc.Collect`. It collects
+basic heredocs for `RUN`, `ADD`, and `COPY`, including quoted delimiters,
+multiple bodies, file descriptors, and `<<-` tab stripping. `ONBUILD` itself
+does not collect a body; its handler delegates to the same instruction
+registry, so a nested `RUN`, `ADD`, or `COPY` invokes the same body collector.
+Body collection does not perform shell expansion or execute the body.
+
 ## Error and state ownership
 
 The lexer owns physical line numbers. The generic parser owns parse positions
@@ -122,8 +138,6 @@ those operations are safe and do not require order.
 
 ## Explicitly deferred concerns
 
-- Heredoc body collection needs a separate body-consumption contract because
-  heredoc terminators temporarily suspend ordinary instruction iteration.
 - Full shell parsing belongs in a shell package or a replaceable dialect
   component, not in the generic parser.
 - Dockerfile stage interpretation, variable expansion, LLB generation,

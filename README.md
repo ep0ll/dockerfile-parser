@@ -37,5 +37,6 @@ go vet ./...
 ```
 
 The Go implementation is an extensible foundation, not yet complete BuildKit
-behavioral parity. Heredoc collection, full shell grammar, frontend/build
-semantics, and some Dockerfile validation are follow-up work.
+behavioral parity. Basic RUN, ADD, and COPY heredoc collection is supported;
+full shell grammar, variable expansion, frontend/build semantics, and some
+Dockerfile validation remain out of scope.

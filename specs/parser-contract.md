@@ -15,6 +15,8 @@ byte source
   -> comment recognizer
   -> directive recognizer + directive handlers
   -> instruction splitter
+  -> instruction splitter
+  -> optional multiline-body collector
   -> instruction-name registry
   -> instruction-local flag parser
   -> instruction handler
@@ -60,6 +62,19 @@ instruction handler and may choose when or whether to reject a parsed event.
   or requiring instructions to appear inside a stage.
 - These validations belong in explicit application-level policies, which may
   be composed around the streaming API.
+
+## Multiline bodies
+
+- Multiline bodies are consumed by an optional dialect-provided body collector
+  between instruction splitting and handler dispatch.
+- The collector receives the current statement and a source cursor that can
+  read subsequent physical lines while preserving source positions.
+- The collector returns opaque body values. The generic parser does not know
+  heredoc delimiters, indentation rules, expansion rules, or other dialect
+  semantics.
+- The parser attaches returned bodies to the instruction input and result.
+- A nested instruction uses the same collector when it is parsed through the
+  shared instruction registry.
 
 ## Instruction handlers
 
@@ -109,6 +124,7 @@ An instruction result should retain:
 - a representation/form marker when a dialect distinguishes word, shell,
   JSON, key/value, or raw payloads;
 - zero or more nested instructions;
+- zero or more opaque multiline body attachments;
 - source position and preceding comments;
 - an opaque dialect-specific payload for language-specific extensions.
 
