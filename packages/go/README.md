@@ -131,6 +131,11 @@ A registration with an existing name replaces only that instruction handler.
 An unknown instruction is preserved by default; use
 `parser.WithUnknownInstructionHandler` or a custom handler to change that.
 
+Default flag schemas are declared alongside their corresponding instruction
+handlers (for example, `run.go` owns RUN's built-in flags), then composed by
+`DefaultFlagOptions`. This keeps command syntax and its default option grammar
+co-located without preventing callers from replacing either independently.
+
 ## Replace an instruction's complete flag schema
 
 `WithFlagSpecs` replaces, rather than appends to, the schema for one

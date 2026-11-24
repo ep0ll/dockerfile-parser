@@ -300,3 +300,44 @@ func TestLabelParsesLegacyAndKeyValueForms(t *testing.T) {
 		t.Fatalf("LABEL --unset pairs = %#v", unset.Pairs)
 	}
 }
+
+
+func TestInstructionFlagSchemasAreDeclaredForEachBuiltInCommand(t *testing.T) {
+	source := "ADD --chown=1000:1000 a /b\n" +
+		"COPY --from=stage --link a /b\n" +
+		"FROM --platform=linux/amd64 alpine\n" +
+		"RUN --network=host echo hi\n" +
+		"HEALTHCHECK --interval=30s CMD true\n" +
+		"ENV --unset FOO\n" +
+		"LABEL --unset example.label\n" +
+		"VOLUME --unset /cache\n"
+	p, err := dockerfile.NewParser(strings.NewReader(source),
+		parser.WithUnknownFlagPolicy(parser.UnknownFlagError),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []struct {
+		name string
+		flag string
+	}{
+		{name: "ADD", flag: "chown"},
+		{name: "COPY", flag: "from"},
+		{name: "FROM", flag: "platform"},
+		{name: "RUN", flag: "network"},
+		{name: "HEALTHCHECK", flag: "interval"},
+		{name: "ENV", flag: "unset"},
+		{name: "LABEL", flag: "unset"},
+		{name: "VOLUME", flag: "unset"},
+	}
+	for _, item := range expected {
+		instruction, err := p.Next()
+		if err != nil {
+			t.Fatalf("%s: %v", item.name, err)
+		}
+		if instruction.Name != item.name || !instruction.Flags.Has(item.flag) {
+			t.Fatalf("%s flags = %#v", item.name, instruction.Flags)
+		}
+	}
+}
