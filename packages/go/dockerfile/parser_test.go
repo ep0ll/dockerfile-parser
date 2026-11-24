@@ -341,3 +341,41 @@ func TestInstructionFlagSchemasAreDeclaredForEachBuiltInCommand(t *testing.T) {
 		}
 	}
 }
+
+
+func TestHealthcheckSeparatesModeAndCommandForm(t *testing.T) {
+	source := "HEALTHCHECK --interval=30s CMD [\\"curl\\", \\"-f\\", \\"http://localhost\\"]\\n" +
+		"HEALTHCHECK CMD curl -f http://localhost\\n" +
+		"HEALTHCHECK NONE\\n"
+	p, err := dockerfile.NewParser(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jsonCommand, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jsonCommand.Data != "CMD" || jsonCommand.Form != parser.FormJSON ||
+		len(jsonCommand.JSONArgs) != 3 || jsonCommand.JSONArgs[0] != "curl" ||
+		!jsonCommand.Flags.Has("interval") {
+		t.Fatalf("JSON HEALTHCHECK = %#v", jsonCommand)
+	}
+
+	shellCommand, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shellCommand.Data != "CMD" || shellCommand.Form != parser.FormShell ||
+		shellCommand.Command != "curl -f http://localhost" {
+		t.Fatalf("shell HEALTHCHECK = %#v", shellCommand)
+	}
+
+	none, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if none.Data != "NONE" {
+		t.Fatalf("HEALTHCHECK NONE = %#v", none)
+	}
+}
