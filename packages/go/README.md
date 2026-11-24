@@ -175,7 +175,20 @@ The parser intentionally does not decide which instructions may appear below
 `ONBUILD`. Applications can inspect `Instruction.Children` and apply their own
 policy.
 
-## Directives and comments are separate extension points
+## Names and directives are configurable
+
+The default name normalizer is Dockerfile-style case-insensitive matching.
+A custom language can choose exact-case matching or its own naming rules:
+
+```go
+parser.WithInstructionNameNormalizer(func(name string) string { return name })
+parser.WithDirectiveNameNormalizer(strings.ToLower)
+```
+
+Configure a normalizer before custom registrations. When applied after the
+Dockerfile defaults, the option re-keys existing handlers and flag schemas.
+Collisions are reported during parser construction rather than silently
+overwriting a registration.
 
 Built-in Dockerfile directives live in individual files under
 `dockerfile/directives` (`Escape`, `Syntax`, and `Check`). Replace or add a
