@@ -9,9 +9,13 @@ func ParseOnbuild(ctx *parser.Context, input parser.InstructionInput) (*parser.I
 	if err != nil {
 		return nil, err
 	}
-	instruction := &parser.Instruction{Form: parser.FormRaw, Command: input.RawArgs}
+	instruction := &parser.Instruction{
+		Form:    parser.FormRaw,
+		Command: input.RawArgs,
+	}
 	if child != nil {
 		instruction.Children = []*parser.Instruction{child}
+		instruction.Position = child.Position
 	}
 	return instruction, nil
 }

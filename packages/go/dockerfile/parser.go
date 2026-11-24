@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/ep0ll/dockerfile-parser/packages/go/dockerfile/directives"
+	"github.com/ep0ll/dockerfile-parser/packages/go/dockerfile/heredoc"
 	"github.com/ep0ll/dockerfile-parser/packages/go/dockerfile/instructions"
 	"github.com/ep0ll/dockerfile-parser/packages/go/parser"
 )
@@ -18,6 +19,7 @@ func DefaultOptions() []Option {
 	options := []Option{
 		parser.WithCommentPrefix("#"),
 		parser.WithDirectivePreambleOnly(true),
+		parser.WithBodyCollector(heredoc.Collect),
 		parser.WithDirectiveHandler("escape", directives.Escape),
 		parser.WithDirectiveHandler("syntax", directives.Syntax),
 		parser.WithDirectiveHandler("check", directives.Check),
