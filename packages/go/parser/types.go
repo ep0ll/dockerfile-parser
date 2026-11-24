@@ -62,8 +62,45 @@ type InstructionInput struct {
     Position Position
 }
 
+// Body is an opaque, language-neutral block attached to an instruction.
+// Kind identifies the block grammar (for example, "heredoc"); Data carries
+// dialect-specific metadata without coupling the parser core to that dialect.
+type Body struct {
+	Kind string
+	Name string
+	Content string
+	Position Position
+	Data any
+}
+
 // LineReader is the minimal contract required from a physical-line lexer.
 type LineReader interface{ Next() (lexer.Line, error) }
+
+// BodyContext provides controlled access to subsequent source lines while a
+// body collector consumes a multiline block belonging to the current statement.
+type BodyContext struct {
+	parser *Parser
+	endLine int
+}
+
+// NextLine consumes one physical source line and updates the current range.
+func (c *BodyContext) NextLine() (lexer.Line, error) {
+	line, err := c.parser.lines.Next()
+	if err == nil {
+		c.endLine = line.Number
+	}
+	return line, err
+}
+
+// EndLine returns the latest physical line consumed by the body collector.
+func (c *BodyContext) EndLine() int { return c.endLine }
+
+// EscapeToken returns the active lexical escape token.
+func (c *BodyContext) EscapeToken() rune { return c.parser.escapeToken }
+
+// BodyCollector consumes any multiline bodies associated with an instruction.
+// It is invoked before the instruction handler and can read following lines.
+type BodyCollector func(*BodyContext, InstructionInput) ([]Body, error)
 
 // LineReaderFactory lets a dialect replace the physical source reader.
 type LineReaderFactory func(io.Reader) LineReader

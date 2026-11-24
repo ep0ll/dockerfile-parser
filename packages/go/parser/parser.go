@@ -21,6 +21,7 @@ type Parser struct {
 	directiveParser        DirectiveParser
 	instructionSplitter    InstructionSplitter
 	flagParser             FlagParser
+	bodyCollector          BodyCollector
 	instructionNormalizer  NameNormalizer
 	directiveNormalizer    NameNormalizer
 	directiveHandlers      map[string]DirectiveHandler
@@ -69,6 +70,7 @@ func New(r io.Reader, options ...Option) (*Parser, error) {
 		directiveParser:        cfg.directiveParser,
 		instructionSplitter:    cfg.instructionSplitter,
 		flagParser:             cfg.flagParser,
+		bodyCollector:          cfg.bodyCollector,
 		instructionNormalizer:  cfg.instructionNormalizer,
 		directiveNormalizer:    cfg.directiveNormalizer,
 		directiveHandlers:      cfg.directiveHandlers,
@@ -119,6 +121,10 @@ func (p *Parser) Next() (*Instruction, error) {
 		position := Position{StartLine: line.Number, EndLine: endLine}
 		instruction, err := p.parseInstruction(logical, "", position, p.pendingComments)
 		if err != nil {
+			var positioned *ParseError
+			if errors.As(err, &positioned) {
+				return nil, err
+			}
 			return nil, &ParseError{Position: position, Err: err}
 		}
 		p.pendingComments = nil
@@ -231,6 +237,18 @@ func (p *Parser) parseInstruction(raw, scope string, position Position, comments
 		return nil, fmt.Errorf("expected an instruction name")
 	}
 	input := InstructionInput{Name: name, Raw: raw, RawArgs: args, Scope: scope, Position: position}
+	if p.bodyCollector != nil {
+		bodyContext := &BodyContext{parser: p, endLine: position.EndLine}
+		bodies, err := p.bodyCollector(bodyContext, input)
+		if err != nil {
+			return nil, &ParseError{
+				Position: Position{StartLine: position.StartLine, EndLine: bodyContext.EndLine()},
+				Err:      err,
+			}
+		}
+		input.Bodies = bodies
+		input.Position.EndLine = bodyContext.EndLine()
+	}
 	handler := p.instructionHandlers[p.instructionNormalizer(name)]
 	if handler == nil {
 		handler = p.unknownHandler
@@ -252,7 +270,10 @@ func (p *Parser) parseInstruction(raw, scope string, position Position, comments
 		instruction.RawArgs = args
 	}
 	if instruction.Position.StartLine == 0 {
-		instruction.Position = position
+		instruction.Position = input.Position
+	}
+	if instruction.Bodies == nil {
+		instruction.Bodies = append([]Body(nil), input.Bodies...)
 	}
 	if instruction.Comments == nil {
 		instruction.Comments = append([]string(nil), comments...)

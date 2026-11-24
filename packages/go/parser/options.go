@@ -30,6 +30,7 @@ type config struct {
 	directiveParser        DirectiveParser
 	instructionSplitter    InstructionSplitter
 	flagParser             FlagParser
+	bodyCollector          BodyCollector
 	instructionNormalizer  NameNormalizer
 	directiveNormalizer    NameNormalizer
 	directiveHandlers      map[string]DirectiveHandler
@@ -137,6 +138,18 @@ func WithFlagParser(parser FlagParser) Option {
 			return fmt.Errorf("flag parser cannot be nil")
 		}
 		c.flagParser = parser
+		return nil
+	}
+}
+
+// WithBodyCollector replaces the multiline-body consumer for this dialect.
+// A nil collector is rejected; use a collector that returns no bodies to disable it.
+func WithBodyCollector(collector BodyCollector) Option {
+	return func(c *config) error {
+		if collector == nil {
+			return fmt.Errorf("body collector cannot be nil")
+		}
+		c.bodyCollector = collector
 		return nil
 	}
 }
