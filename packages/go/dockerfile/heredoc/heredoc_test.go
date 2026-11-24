@@ -3,6 +3,7 @@ package heredoc
 import "testing"
 
 func TestParseWord(t *testing.T) {
+	quote := string(rune(34))
 	tests := []struct {
 		name string
 		word string
@@ -11,7 +12,7 @@ func TestParseWord(t *testing.T) {
 	}{
 		{name: "plain", word: "<<EOF", want: Spec{Delimiter: "EOF", Expand: true}, ok: true},
 		{name: "quoted", word: "<<'EOF'", want: Spec{Delimiter: "EOF", Expand: false}, ok: true},
-		{name: "double quoted", word: \`<<"END"\`, want: Spec{Delimiter: "END", Expand: false}, ok: true},
+		{name: "double quoted", word: "<<" + quote + "END" + quote, want: Spec{Delimiter: "END", Expand: false}, ok: true},
 		{name: "strip tabs", word: "<<-EOF", want: Spec{Delimiter: "EOF", Expand: true, StripTabs: true}, ok: true},
 		{name: "file descriptor", word: "2<<EOF", want: Spec{Delimiter: "EOF", FileDescriptor: 2, Expand: true}, ok: true},
 		{name: "not heredoc", word: "echo", ok: false},
