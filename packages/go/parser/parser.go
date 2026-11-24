@@ -102,10 +102,8 @@ func (p *Parser) Next() (*Instruction, error) {
 			continue
 		}
 		if strings.TrimSpace(line.Text) == "" {
-			// Blank lines do not consume the parser-directive preamble. They
-			// also separate comments from the next instruction, so discard any
-			// pending documentation comments here.
-			p.pendingComments = nil
+			// Blank lines do not consume the parser-directive preamble or
+			// detach preceding comments from the next instruction.
 			continue
 		}
 
@@ -175,7 +173,11 @@ func (p *Parser) handleComment(line lexer.Line, continuation bool) error {
 		}
 	}
 	if !continuation {
-		p.pendingComments = append(p.pendingComments, body)
+		if body == "" {
+			p.pendingComments = nil
+		} else {
+			p.pendingComments = append(p.pendingComments, body)
+		}
 	}
 	p.closePreamble()
 	return nil

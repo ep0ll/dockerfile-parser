@@ -233,3 +233,32 @@ func TestContinuationErrorsIncludeSourcePosition(t *testing.T) {
 		t.Fatalf("continuation error = %v", err)
 	}
 }
+
+
+func TestCommentsRemainAttachedAcrossBlankLines(t *testing.T) {
+	p, err := dockerfile.NewParser(strings.NewReader("# useful documentation\n\n\nFROM alpine\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instruction, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(instruction.Comments) != 1 || instruction.Comments[0] != "useful documentation" {
+		t.Fatalf("comments were not retained: %#v", instruction.Comments)
+	}
+}
+
+func TestEmptyCommentResetsPendingComments(t *testing.T) {
+	p, err := dockerfile.NewParser(strings.NewReader("# stale comment\n#\nFROM alpine\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instruction, err := p.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(instruction.Comments) != 0 {
+		t.Fatalf("empty comment should reset pending comments: %#v", instruction.Comments)
+	}
+}
